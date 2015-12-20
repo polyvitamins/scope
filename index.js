@@ -1,6 +1,7 @@
+require('polyinherit');
 var extend = require('extend');
 var compareObjects = require('compareObjects');
-var Watcher = function() {
+var Scope = function() {
 	this.$$digestRequired = false;
     this.$$digestInProgress = false;
     this.$$watchers = [];
@@ -9,13 +10,14 @@ var Watcher = function() {
 	/*
     Функция проверяет отличия в объекте. Производит глубокий анализ.
     */
-    $watch: function(expr, fn) {
+    $watch: function(expr, fn, deep) {
     	var l = extend(true, {}, expr(this));
         var watcher = {
             expr: expr,
             listner: fn || false,
             last: l,
-            diff: l
+            diff: l,
+            deep: !!deep
         };
 
         this.$$watchers.push(watcher);
@@ -28,11 +30,16 @@ var Watcher = function() {
         return watcher;
     },
     /*
-    Вносит изменения в cache и запускает digest в данном scope и в дочерних
+    Вносит изменения в cache и запускает digest во всем дереве
     */
     $apply: function(exprFn) {
         exprFn.call(this);
-        this.$digest();
+        
+        var parent = this;
+        while("object"===typeof this.$parent && "function"===typeof this.$parent.$digest) {
+        	parent = this.$parent;
+        }
+        parent.$digest();
     },
     /*
     Получает суммарные данные объекта. Это значит что перед тем как
@@ -42,18 +49,42 @@ var Watcher = function() {
     возвращен объект только с учетом изменений в указанной ветке.
     */
     $digest: function() {
+    	// Immersion to childs
+    	if (this.$childs instanceof Array) {
+        	for (var i = 0;i<this.$childs.length;++i) {
+        		if ("function"===typeof this.$childs.$digest) this.$childs.$digest();
+        	}
+        }
+
         if (this.$$digestInProgress) { this.$$digestRequired = true; return }
         this.$$digestInProgress = true;
         
         sx.utils.eachArray(this.$$watchers, function(watch) {
             if (watch===null) return;
-            var newly = watch.expr(this);
-            var diff = compareObjects(newly, watch.last);
-            if (diff.$$hashKey) delete diff.$$hashKey; // Удаляем hashKey angular
+            var newly = watch.expr(this),different=false;
+            if (watch.deep && ("object"===typeof newly && "object"===typeof watch.last)) {
+            	
+        		var diff = compareObjects(newly, watch.last);
+            	if (diff.$$hashKey) delete diff.$$hashKey; // Удаляем hashKey angular
+            	different=(JSON.stringify(diff) !== '{}');
+            	
+            } else if (typeof newly !== typeof watch.last) {
+            	different = true;
+            	diff = newly;
+            } else {
+            	if (newly!==watch.last) {
+            		different = true;
+            		diff = newly;
+            	} else {
+            		different = false;
+            		diff = '';
+            	}            	
+            };
+            
 			watch.diff = diff;            
-            if (JSON.stringify(diff) !== '{}') {
+            if (different) {
              watch.listner(newly, watch.last, diff);
-              watch.last = extend(true, {}, newly);
+              watch.last = "object"===typeof newly ? extend(true, {}, newly) : newly;
             }
             
         }, this);
@@ -80,3 +111,5 @@ var Watcher = function() {
         });
     }
 });
+
+return Scope;
