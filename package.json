@@ -8,21 +8,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/polyvitamins/watcher.git"
+    "url": "git+ssh://git@github.com/polyvitamins/scope.git"
   },
   "dependencies": {
     "extend": "polyvitamins/extend",
-    "compareObjects": "polyvitamins/compareobjects"
+    "compareObjects": "polyvitamins/compareobjects",
+    "polyinherit": "polyvitamins/polyinherit"
   },
   "keywords": [
-    "watcher"
+    "scope"
   ],
   "author": "Vladimir Kalmykov <vladimirmorulus@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/polyvitamins/watcher/issues"
+    "url": "https://github.com/polyvitamins/scope/issues"
   },
-  "homepage": "https://github.com/polyvitamins/watcher#readme",
+  "homepage": "https://github.com/polyvitamins/scope#readme",
   "devDependencies": {
     "tap": "^2.3.3"
   }

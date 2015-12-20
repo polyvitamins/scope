@@ -1,17 +1,29 @@
 require('polyinherit');
 var extend = require('extend');
 var compareObjects = require('compareObjects');
-var Scope = function() {
+var Scope = function($parent) {
 	this.$$digestRequired = false;
     this.$$digestInProgress = false;
     this.$$watchers = [];
     this.$$digestInterationCount=0;
+    /* Set parent scope */
+    if ("object"===typeof $parent) {
+        this.$parent = $parent;
+        if ($parent.$childs instanceof Array) $parent.$childs.push(this);
+    }
+    /*
+    Make self childs
+    */
+    if ("undefined"===typeof this.$childs) this.$childs = [];
 }.proto({
 	/*
     Функция проверяет отличия в объекте. Производит глубокий анализ.
     */
     $watch: function(expr, fn, deep) {
-    	var l = extend(true, {}, expr(this));
+        var result = expr(this);
+        if ("object"===typeof result)
+    	var l = extend(true, {}, result);
+        else l = result;
         var watcher = {
             expr: expr,
             listner: fn || false,
@@ -27,6 +39,9 @@ var Scope = function() {
             watchers[index]=null;
         }
 
+        // Callback now
+        fn(l,l);
+
         return watcher;
     },
     /*
@@ -41,6 +56,11 @@ var Scope = function() {
         }
         parent.$digest();
     },
+    /* Выполняет выражение и запускает цикл */
+    $eval: function(exprFn) {
+        exprFn.call(this);
+        this.$digest();
+    },
     /*
     Получает суммарные данные объекта. Это значит что перед тем как
     вернуть объект он мержит все его ветки в одну. На выходе получается
@@ -52,30 +72,43 @@ var Scope = function() {
     	// Immersion to childs
     	if (this.$childs instanceof Array) {
         	for (var i = 0;i<this.$childs.length;++i) {
-        		if ("function"===typeof this.$childs.$digest) this.$childs.$digest();
+                this.$childs[i].$digest;
+        		if ("function"===typeof this.$childs[i].$digest)
+                    this.$childs[i].$digest();
         	}
         }
 
         if (this.$$digestInProgress) { this.$$digestRequired = true; return }
         this.$$digestInProgress = true;
-        
-        sx.utils.eachArray(this.$$watchers, function(watch) {
+
+        this.$$watchers.forEach(function(watch) {
             if (watch===null) return;
             var newly = watch.expr(this),different=false;
-            if (watch.deep && ("object"===typeof newly && "object"===typeof watch.last)) {
+            if ("object"===typeof newly && "object"===typeof watch.last) {
             	
-        		var diff = compareObjects(newly, watch.last);
-            	if (diff.$$hashKey) delete diff.$$hashKey; // Удаляем hashKey angular
-            	different=(JSON.stringify(diff) !== '{}');
+                if (watch.deep) {
+            		var diff = compareObjects(newly, watch.last);
+                	if (diff.$$hashKey) delete diff.$$hashKey; // Удаляем hashKey angular
+                	different=(JSON.stringify(diff) !== '{}');
+                } else {
+                    different=(JSON.stringify(newly)!==JSON.stringify(watch.last));
+
+                    if (different) diff = newly;
+                    else diff = {};
+                }
             	
             } else if (typeof newly !== typeof watch.last) {
+
             	different = true;
             	diff = newly;
             } else {
+                
             	if (newly!==watch.last) {
+                    
             		different = true;
             		diff = newly;
             	} else {
+                    
             		different = false;
             		diff = '';
             	}            	
@@ -83,11 +116,11 @@ var Scope = function() {
             
 			watch.diff = diff;            
             if (different) {
-             watch.listner(newly, watch.last, diff);
+             watch.listner(newly, diff);
               watch.last = "object"===typeof newly ? extend(true, {}, newly) : newly;
             }
             
-        }, this);
+        });
         if (this.$$digestRequired) {
             this.$$digestInterationCount++;
             if (this.$digestInterationCount>5) {
@@ -112,4 +145,4 @@ var Scope = function() {
     }
 });
 
-return Scope;
+module.exports = Scope;
