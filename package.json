@@ -1,0 +1,26 @@
+{
+  "name": "watcher",
+  "version": "1.0.0",
+  "description": "Watcher",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/polyvitamins/watcher.git"
+  },
+  "dependencies": {
+    "extend": "polyvitamins/extend",
+    "compareObjects": "polyvitamins/compareobjects"
+  },
+  "keywords": [
+    "watcher"
+  ],
+  "author": "Vladimir Kalmykov <vladimirmorulus@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/polyvitamins/watcher/issues"
+  },
+  "homepage": "https://github.com/polyvitamins/watcher#readme"
+}
