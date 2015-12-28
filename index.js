@@ -72,7 +72,7 @@ var Scope = function($$parent) {
     	// Immersion to childs
     	if (this.$$childScopes instanceof Array) {
         	for (var i = 0;i<this.$$childScopes.length;++i) {
-                this.$$childScopes[i].$digest;
+                this.$$childScopes[i].$digest();
         		if ("function"===typeof this.$$childScopes[i].$digest)
                     this.$$childScopes[i].$digest();
         	}
