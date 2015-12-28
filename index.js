@@ -1,20 +1,20 @@
 require('polyinherit');
 var extend = require('extend');
 var compareObjects = require('compareObjects');
-var Scope = function($parent) {
+var Scope = function($$parent) {
 	this.$$digestRequired = false;
     this.$$digestInProgress = false;
     this.$$watchers = [];
     this.$$digestInterationCount=0;
     /* Set parent scope */
-    if ("object"===typeof $parent) {
-        this.$parent = $parent;
-        if ($parent.$childs instanceof Array) $parent.$childs.push(this);
+    if ("object"===typeof $$parent) {
+        this.$$$parentScope = $$parent;
+        if ($$parent.$$childScopes instanceof Array) $$parent.$$childScopes.push(this);
     }
     /*
     Make self childs
     */
-    if ("undefined"===typeof this.$childs) this.$childs = [];
+    if ("undefined"===typeof this.$$childScopes) this.$$childScopes = [];
 }.proto({
 	/*
     Функция проверяет отличия в объекте. Производит глубокий анализ.
@@ -51,8 +51,8 @@ var Scope = function($parent) {
         exprFn.call(this);
         
         var parent = this;
-        while("object"===typeof this.$parent && "function"===typeof this.$parent.$digest) {
-        	parent = this.$parent;
+        while("object"===typeof this.$$parent && "function"===typeof this.$$parent.$digest) {
+        	parent = this.$$parent;
         }
         parent.$digest();
     },
@@ -70,11 +70,11 @@ var Scope = function($parent) {
     */
     $digest: function() {
     	// Immersion to childs
-    	if (this.$childs instanceof Array) {
-        	for (var i = 0;i<this.$childs.length;++i) {
-                this.$childs[i].$digest;
-        		if ("function"===typeof this.$childs[i].$digest)
-                    this.$childs[i].$digest();
+    	if (this.$$childScopes instanceof Array) {
+        	for (var i = 0;i<this.$$childScopes.length;++i) {
+                this.$$childScopes[i].$digest;
+        		if ("function"===typeof this.$$childScopes[i].$digest)
+                    this.$$childScopes[i].$digest();
         	}
         }
 

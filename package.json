@@ -25,6 +25,6 @@
   },
   "homepage": "https://github.com/polyvitamins/scope#readme",
   "devDependencies": {
-    "tap": "^2.3.3"
+    "tap": "^2.3.5"
   }
 }
