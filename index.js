@@ -1,7 +1,7 @@
 require('polyinherit');
 var Promises = require('polypromise').Promises,
 extend = require('extend'),
-compareObjects = require('compareObjects'),
+compareObjects = require('compareobjects'),
 dataSnap = function(data) {
     var snap;
     if ("object"===typeof data && null!==data) {
