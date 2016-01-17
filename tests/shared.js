@@ -34,7 +34,7 @@ tap.test('customize watcher', function planned(t) {
         alfa: 'omega'
     }
 
-    tester.$polyscope.customizers.watchExprRouters.push({
+    tester.tester.$polyscope.customization.watchExprRouters.push({
         match: /^scope\./,
         replace: /^(scope\.)/,
         overrideMethod: function(expr, callback, flags) {

@@ -41,7 +41,7 @@ var Scope = function($$parent) {
     this.$$watchers = [];
     this.$$digestInterationCount=0;
     this.$polyscope={
-        customizers:{
+        customization:{
             /*
             Engine of watchExpr. It allows you to control methods and options of watch and parse process
             ```
@@ -68,14 +68,14 @@ var Scope = function($$parent) {
     if ("undefined"===typeof this.$$childScopes) this.$$childScopes = [];
 }.proto({
     /*
-    Returns user customizing data from this.$polyscope.customizers
+    Returns user customizing data from this.$polyscope.customization
     */
-    $$getCustomizerByMatch: function(customizer, expr) {
-        if (this.$polyscope.customizers[customizer].length>0) {
-            for (i=0;i<this.$polyscope.customizers[customizer].length;++i) {
-                if (this.$polyscope.customizers[customizer][i].match && "string"===typeof expr
-                    && (this.$polyscope.customizers[customizer][i].match===true || this.$polyscope.customizers[customizer][i].match.test(expr))) {
-                        return this.$polyscope.customizers[customizer][i];
+    $$getCustomizationByMatch: function(customizer, expr) {
+        if (this.$polyscope.customization[customizer].length>0) {
+            for (i=0;i<this.$polyscope.customization[customizer].length;++i) {
+                if (this.$polyscope.customization[customizer][i].match && "string"===typeof expr
+                    && (this.$polyscope.customization[customizer][i].match===true || this.$polyscope.customization[customizer][i].match.test(expr))) {
+                        return this.$polyscope.customization[customizer][i];
                 }
             }
         }
@@ -323,7 +323,7 @@ var Scope = function($$parent) {
         this.$$polyscope.customized.watchExprRouters[] must have property `match` with regexpr determines its participation.
         Property `replace` contains regular expression to replace some text in expression. Property `scope` set up default scopr for this expression
         */
-        var customizer = "string"===typeof expr ? this.$$getCustomizerByMatch('watchExprRouters', expr) : false;
+        var customizer = "string"===typeof expr ? this.$$getCustomizationByMatch('watchExprRouters', expr) : false;
         if (customizer){
                 if (customizer.scope)
                     scope = customizer.match[i].scope;
@@ -337,7 +337,7 @@ var Scope = function($$parent) {
         */
         if ("function"===typeof overrideMethod) {
             var watcher;
-            watcher = overrideMethod(expr, function() {
+            watcher = overrideMethod.call(scope, expr, function() {
                 var rargs = Array.prototype.slice.apply(arguments);
                 setTimeout(function() {
 
@@ -379,7 +379,7 @@ var Scope = function($$parent) {
     },
     $parse: function(expr, scope) {
         var result, customizer;
-        if (("undefined"===typeof scope) && ("string"===typeof expr) && (customizer = this.$$getCustomizerByMatch('watchExprRouters', expr))) {
+        if (("undefined"===typeof scope) && ("string"===typeof expr) && (customizer = this.$$getCustomizationByMatch('watchExprRouters', expr))) {
             if (customizer.scope) scope = customizer.scope;
             if (customizer.replace instanceof RegExp) expr.replace(customizer.replace, '');
         }
