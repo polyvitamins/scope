@@ -11,9 +11,9 @@
     "url": "git+ssh://git@github.com/polyvitamins/scope.git"
   },
   "dependencies": {
-    "extend": "polyvitamins/extend",
     "compareObjects": "polyvitamins/compareobjects",
-    "polyinherit": "polyvitamins/polyinherit"
+    "extend": "polyvitamins/extend",
+    "polypromise": "github:polyvitamins/polypromise"
   },
   "keywords": [
     "scope"

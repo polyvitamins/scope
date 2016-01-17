@@ -1,7 +1,16 @@
 
+var tap = require('tap');
+var Scope = require('./../index.js');
+var tester;
+var collection = {
+    "a": {"hello": "world"},
+    "b": 123,
+    "c": null
+};
 
-tap.test('watcher in deep mode', function planned(t) {
+tap.test('watcher set', function planned(t) {
     t.plan(2);
+    tester = new Scope();
     var collection2 = {
         "a": {"hello": "world"},
         "b": 123,

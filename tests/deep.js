@@ -1,7 +1,16 @@
 
+var tap = require('tap');
+var Scope = require('./../index.js');
+var tester;
+var collection = {
+    "a": {"hello": "world"},
+    "b": 123,
+    "c": null
+};
 
 tap.test('watcher in deep mode', function planned(t) {
     t.plan(2);
+    tester = new Scope();
     var collection2 = {
         "a": {"hello": "world"},
         "b": 123,
@@ -15,7 +24,7 @@ tap.test('watcher in deep mode', function planned(t) {
         console.log('watching', count);
         t.ok(JSON.stringify(diff)==JSON.stringify(expect), "["+count+"] Unexpected diff result. Expect "+JSON.stringify(expect)+", but "+JSON.stringify(diff)+" given;");
 
-    }, true);
+    }, POLYSCOPE_DEEP | POLYSCOPE_DITAILS);
 
     setTimeout(function() {
         // Change c to true
