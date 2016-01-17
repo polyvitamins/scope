@@ -1,8 +1,8 @@
-var Promises = require('polypromise').Promises;
 require('polyinherit');
-var extend = require('extend');
-var compareObjects = require('compareObjects');
-var dataSnap = function(data) {
+var Promises = require('polypromise').Promises,
+extend = require('extend'),
+compareObjects = require('compareObjects'),
+dataSnap = function(data) {
     var snap;
     if ("object"===typeof data && null!==data) {
         try {
@@ -17,7 +17,11 @@ var dataSnap = function(data) {
     }
 
     return snap;
-};
+},
+bitPush = function(bitNumber, mask) {
+    if (!(bitNumber & mask)) bitNumber = bitNumber | mask;
+    return bitNumber;
+}
 
 // Set global constants
 POLYSCOPE_DEFAULT = 1 << 0;
@@ -28,12 +32,30 @@ POLYSCOPE_DITAILS = 1 << 4;
 POLYSCOPE_COMPARE = 1 << 5;
 POLYSCOPE_ARRAYRESULT = 1 << 10;
 
+var flagsFndRegExpr = /^([?+]+)/;
+
 
 var Scope = function($$parent) {
 	this.$$digestRequired = false;
     this.$$digestInProgress = false;
     this.$$watchers = [];
     this.$$digestInterationCount=0;
+    this.$polyscope={
+        customizers:{
+            /*
+            Engine of watchExpr. It allows you to control methods and options of watch and parse process
+            ```
+            {
+                match: /^scope\./,
+                replace: /^(scope)/,
+                scope: someobject,
+                overrideMethod: function(expr, callback, bitconfig) { ... }
+            }
+            ```
+            */
+            watchExprRouters: [] 
+        }
+    };
 
     /* Set parent scope */
     if ("object"===typeof $$parent) {
@@ -45,6 +67,20 @@ var Scope = function($$parent) {
     */
     if ("undefined"===typeof this.$$childScopes) this.$$childScopes = [];
 }.proto({
+    /*
+    Returns user customizing data from this.$polyscope.customizers
+    */
+    $$getCustomizerByMatch: function(customizer, expr) {
+        if (this.$polyscope.customizers[customizer].length>0) {
+            for (i=0;i<this.$polyscope.customizers[customizer].length;++i) {
+                if (this.$polyscope.customizers[customizer][i].match && "string"===typeof expr
+                    && (this.$polyscope.customizers[customizer][i].match===true || this.$polyscope.customizers[customizer][i].match.test(expr))) {
+                        return this.$polyscope.customizers[customizer][i];
+                }
+            }
+        }
+        return false;
+    },
     /*
     Watch an expression (function) or set of expressions (means array)
 
@@ -60,8 +96,12 @@ var Scope = function($$parent) {
     * If u use at last one of bitoption constants, be carefull, other options
 
     */
-    $watch: function(expr, callback, bitoption) {
-        return this[expr instanceof Array ? '$watchSet' : '$watchExpr'].apply(this, expr instanceof Array ? [expr, callback] : [expr, callback, "undefined"!==typeof bitoption ? bitoption : false]);
+    $watch: function(expr, callback, bitoption, reserve) {
+        var shared=false;
+        /*
+        Support capabilities specify the name of a shared object
+        */
+        this.$fetch.apply(this, (callback instanceof Array && "string"===typeof expr) ? [expr, callback, bitoption, bitPush(reserve||0, POLYSCOPE_WATCH)] : [expr, callback, bitoption])
     },
     /*
     Get some value from current object by expression.
@@ -104,11 +144,18 @@ var Scope = function($$parent) {
     ], callback);
     ```
     */
-    $fetch: function(expressions, callback, bitoptions) {
-        var singleRequest=false;
-        if (!(expressions instanceof Array)) {
+    $fetch: function(expressions, callback, bitoptions, reserve) {
+        var singleRequest=false,shared=false;
+        if (callback instanceof Array && "string"===typeof expressions) {
+            shared=expressions;
+            expressions=callback;
+            callback=bitoptions;
+            bitoptions=reserve;
+            if (shared) expressions = expressions.map(function(exp) { var flags = flagsFndRegExpr.exec(exp); return (flags?flags[1]:'')+shared+'.'+exp.replace(flagsFndRegExpr, '')});
+        }
+        else if (!(expressions instanceof Array)) {
             singleRequest = true;
-            expressions = "string" === typeof expressions ? [expressions] : [expressions, bitoptions || (POLYSCOPE_ONCE)];
+            expressions = "string" === typeof expressions ? [expressions] : [[expressions, bitoptions || (POLYSCOPE_ONCE)]];
         }
         var self=this,
         watchable = expressions.map(function(val) {
@@ -227,56 +274,120 @@ var Scope = function($$parent) {
      POLYSCOPE_DITAILS - force full info
 
      Notice: if you dont wanna to watch expression and keep it alive use POLYSCOPE_ONCE
+
+    CUSTOMIZE ==
+    You can customize watch engine via configuration
+    ```
+    __$$polyscope.customized.watchExprRouters.push({
+        match: /^scope\./,
+        replace: /^(scope)/,
+        scope: someobject,
+        overrideMethod: function(expr, callback, bitconfig) { ... }
+    })
+    ```
+    New method should take arguments:
+    - expr: expression or function
+    - callback: callback function
+    - bitconfig: bit options WHERE
+        - !!(bitconfig & POLYSCOPE_DEEP): deep flag (parse objects deep)
+        - !(bitconfig & POLYSCOPE_ONCE) || !!(bitconfig & POLYSCOPE_WATCH): keep watching (is false - once)
+        - !!(bitconfig & POLYSCOPE_DITAILS): return 3 aguments (newvalue, difference, oldvalue)
+        - !!(bitconfig & POLYSCOPE_COMPARE) || !!(bitconfig & POLYSCOPE_DITAILS): superdeep comparison mode
+    
+    Watch method must send back at least one argument `newvalue`, in mode !!(bitconfig & POLYSCOPE_DITAILS) it should send 3 arguments (newvalue, difference, oldvalue)
+    Function itself must return an object with method destroy that destroy a watcher^
+
     */
-    $watchExpr: function(expr, fn, config) {
-        var deep,watch,fullinfo;
-        if ("number"===typeof config) {
-            deep = !!(config & POLYSCOPE_DEEP);
-            watch = !(config & POLYSCOPE_ONCE);
-            fullinfo = !!(config & POLYSCOPE_DITAILS);
-            compare = !!(config & POLYSCOPE_COMPARE) || !!(config & POLYSCOPE_DITAILS);
+    $watchExpr: function(expr, callback, bitconfig) {
+        var deep,
+        watch,
+        fullinfo,
+        self=this,
+        i=0,
+        scope=this,
+        overrideMethod=!1;
+        if ("number"===typeof bitconfig) {
+            deep = !!(bitconfig & POLYSCOPE_DEEP);
+            watch = !(bitconfig & POLYSCOPE_ONCE);
+            fullinfo = !!(bitconfig & POLYSCOPE_DITAILS);
+            compare = !!(bitconfig & POLYSCOPE_COMPARE) || !!(bitconfig & POLYSCOPE_DITAILS);
         } else {
-            deep = !!config;
+            deep = !!bitconfig;
             watch = true;
             fullinfo = false;
             compare = false;
         }
 
-        var result = this.$parse(expr);
-        
-        if ("object"===typeof result)
-    	var l = compare ? extend(true, {}, result) : result;
-        else l = result;
-        var watcher = {
-            expr: expr,
-            listner: fn || false,
-            last: l,
-            diff: l, // Last value of diff
-            deep: !!deep, // Compare objects without diff
-            compare: !!compare, // Deep analysis for objects diff
-            once: !watch,
-            fullinfo: fullinfo
-        };
-
-        this.$$watchers.push(watcher);
-        var index = this.$$watchers.length-1, watchers=this.$$watchers;
-
-        watcher.destroy = function() {
-            watchers[index]=null;
+        /*
+        Configurated overrides and custom conditional options predetermined in this.$$polyscope.customized.watchExprRouters[]
+        this.$$polyscope.customized.watchExprRouters[] must have property `match` with regexpr determines its participation.
+        Property `replace` contains regular expression to replace some text in expression. Property `scope` set up default scopr for this expression
+        */
+        var customizer = "string"===typeof expr ? this.$$getCustomizerByMatch('watchExprRouters', expr) : false;
+        if (customizer){
+                if (customizer.scope)
+                    scope = customizer.match[i].scope;
+                if (customizer.replace instanceof RegExp) 
+                    expr = expr.replace(customizer.replace, '');
+                if (customizer.overrideMethod) 
+                    overrideMethod = customizer.overrideMethod;
         }
+        /*
+        Main part of execution. Check and run override method or use native.
+        */
+        if ("function"===typeof overrideMethod) {
+            var watcher;
+            watcher = overrideMethod(expr, function() {
+                var rargs = Array.prototype.slice.apply(arguments);
+                setTimeout(function() {
 
-        // Callback now
-        fn(l,l,l);
-        if (watcher.once) watcher.destroy();
+                    if (!watch) watcher.destroy();
+                    callback.apply(self, rargs);
+                });
+            }, bitconfig);
+        } else {
+            var result = this.$parse(expr, scope);
+            
+            if ("object"===typeof result)
+        	var l = compare ? extend(true, {}, result) : result;
+            else l = result;
+            var watcher = {
+                expr: expr,
+                listner: callback || false,
+                last: l,
+                diff: l, // Last value of diff
+                deep: !!deep, // Compare objects without diff
+                compare: !!compare, // Deep analysis for objects diff
+                once: !watch,
+                fullinfo: fullinfo,
+                scope: scope
+            };
+
+            this.$$watchers.push(watcher);
+            var index = this.$$watchers.length-1, watchers=this.$$watchers;
+
+            watcher.destroy = function() {
+                watchers[index]=null;
+            }
+
+            // Callback now
+            callback(l,l,l);
+            if (watcher.once) watcher.destroy();
+        }
 
         return watcher;
     },
-    $parse: function(expr) {
-        var result;
+    $parse: function(expr, scope) {
+        var result, customizer;
+        if (("undefined"===typeof scope) && ("string"===typeof expr) && (customizer = this.$$getCustomizerByMatch('watchExprRouters', expr))) {
+            if (customizer.scope) scope = customizer.scope;
+            if (customizer.replace instanceof RegExp) expr.replace(customizer.replace, '');
+        }
+
         if ("function"===typeof expr) {
-            result = expr.apply(this);
+            result = expr.apply(scope||this);
         } else if ("string"===typeof expr) {
-            with(this) {
+            with(scope||this) {
                 try {
                     eval('result = '+expr+';');
                 } catch(e) {
@@ -302,8 +413,8 @@ var Scope = function($$parent) {
         parent.$digest();
     },
     /* Выполняет выражение и запускает цикл */
-    $eval: function(exprFn) {
-        this.$parse(exprFn);
+    $eval: function(exprFn, data, context) {
+        this.$parse(exprFn, context||undefined);
         this.$digest();
     },
     /*
@@ -330,7 +441,7 @@ var Scope = function($$parent) {
 
         this.$$watchers.forEach(function(watch) {
             if (watch===null) return;
-            var newly = self.$parse(watch.expr),different=false;
+            var newly = self.$parse(watch.expr, watch.scope),different=false;
             if ("object"===typeof newly && "object"===typeof watch.last) {
             	
                 if (watch.deep) {
