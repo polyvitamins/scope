@@ -36,7 +36,7 @@ var flagsFndRegExpr = /^([?+]+)/;
 
 
 var Scope = function($$parent) {
-	this.$$digestRequired = false;
+    this.$$digestRequired = false;
     this.$$digestInProgress = false;
     this.$$watchers = [];
     this.$$digestInterationCount=0;
@@ -53,13 +53,14 @@ var Scope = function($$parent) {
             }
             ```
             */
-            watchExprRouters: [] 
+            watchExprRouters: [],
+            digestEmploymentsRoutes: []
         }
     };
 
     /* Set parent scope */
     if ("object"===typeof $$parent) {
-        this.$$$parentScope = $$parent;
+        this.$$parentScope = $$parent;
         if ($$parent.$$childScopes instanceof Array) $$parent.$$childScopes.push(this);
     }
     /*
@@ -68,13 +69,28 @@ var Scope = function($$parent) {
     if ("undefined"===typeof this.$$childScopes) this.$$childScopes = [];
 }.proto({
     /*
+    Creates new scope
+    */
+    $newScope: function() {
+        this.$$childScopes.push(new Scope(this));
+        return this.$$childScopes[this.$$childScopes.length-1];
+    },
+    /*
+    Append existing scope as child
+    */
+    $appendScope: function($scope) {
+        this.$$childScopes.push($scope);
+        $scope.$$parentScope = this;
+        return this;
+    },
+    /*
     Returns user customizing data from this.$polyscope.customization
     */
     $$getCustomizationByMatch: function(customizer, expr) {
         if (this.$polyscope.customization[customizer].length>0) {
             for (i=0;i<this.$polyscope.customization[customizer].length;++i) {
-                if (this.$polyscope.customization[customizer][i].match && "string"===typeof expr
-                    && (this.$polyscope.customization[customizer][i].match===true || this.$polyscope.customization[customizer][i].match.test(expr))) {
+                if (this.$polyscope.customization[customizer][i].match && "undefined"!==typeof expr && null!==expr
+                    && (this.$polyscope.customization[customizer][i].match===true || (this.$polyscope.customization[customizer][i].match instanceof RegExp && this.$polyscope.customization[customizer][i].match.test(expr)) || ("function"===typeof this.$polyscope.customization[customizer][i].match && this.$polyscope.customization[customizer][i].match(expr)))) {
                         return this.$polyscope.customization[customizer][i];
                 }
             }
@@ -263,7 +279,7 @@ var Scope = function($$parent) {
 
         return unwacther;
     },
-	/*
+    /*
     Watch expression and return value to fn.
     Option `config` means that there will be an in-depth comparison.
 
@@ -349,7 +365,7 @@ var Scope = function($$parent) {
             var result = this.$parse(expr, scope);
             
             if ("object"===typeof result)
-        	var l = compare ? extend(true, {}, result) : result;
+            var l = compare ? extend(true, {}, result) : result;
             else l = result;
             var watcher = {
                 expr: expr,
@@ -403,19 +419,21 @@ var Scope = function($$parent) {
     /*
     Вносит изменения в cache и запускает digest во всем дереве
     */
-    $apply: function(exprFn) {
-        exprFn.call(this);
+    $apply: function(exprFn, data, context) {
+        var result = this.$parse(exprFn, context||undefined);
         
         var parent = this;
-        while("object"===typeof this.$$parent && "function"===typeof this.$$parent.$digest) {
-        	parent = this.$$parent;
+        while(null!==this.$$parentScope && "object"===typeof this.$$parentScope && "function"===typeof this.$$parentScope.$digest) {
+            parent = this.$$parentScope;
         }
         parent.$digest();
+        return result;
     },
     /* Выполняет выражение и запускает цикл */
     $eval: function(exprFn, data, context) {
-        this.$parse(exprFn, context||undefined);
+        var result = this.$parse(exprFn, context||undefined);
         this.$digest();
+        return result;
     },
     /*
     Получает суммарные данные объекта. Это значит что перед тем как
@@ -427,13 +445,20 @@ var Scope = function($$parent) {
     $digest: function() {
         var self = this;
 
-    	// Immersion to childs
-    	if (this.$$childScopes instanceof Array) {
-        	for (var i = 0;i<this.$$childScopes.length;++i) {
-                this.$$childScopes[i].$digest();
-        		if ("function"===typeof this.$$childScopes[i].$digest)
+        // Immersion to childs
+        if (this.$$childScopes instanceof Array) {
+            for (var i = 0;i<this.$$childScopes.length;++i) {
+                
+                if ("function"===typeof this.$$childScopes[i].$digest) {
+                    /*
+                    Customization of childrens digest call
+                    */
+                    var cd = this.$$getCustomizationByMatch('digestEmploymentsRoutes', this.$$childScopes[i]);
+                    if (cd) cd.overrideMethod.call(this, this.$$childScopes[i]);
+                    else
                     this.$$childScopes[i].$digest();
-        	}
+                }
+            }
         }
 
         if (this.$$digestInProgress) { this.$$digestRequired = true; return }
@@ -443,7 +468,7 @@ var Scope = function($$parent) {
             if (watch===null) return;
             var newly = self.$parse(watch.expr, watch.scope),different=false;
             if ("object"===typeof newly && "object"===typeof watch.last) {
-            	
+                
                 if (watch.deep) {
                     if (watch.compare) {
                         var diff = compareObjects(newly, watch.last);
@@ -459,25 +484,25 @@ var Scope = function($$parent) {
                     different= (newly!==watch.last);
                     diff = newly;
                 }
-            	
+                
             } else if (typeof newly !== typeof watch.last) {
 
-            	different = true;
-            	diff = newly;
+                different = true;
+                diff = newly;
             } else {
                 
-            	if (newly!==watch.last) {
+                if (newly!==watch.last) {
                     
-            		different = true;
-            		diff = newly;
-            	} else {
+                    different = true;
+                    diff = newly;
+                } else {
                     
-            		different = false;
-            		diff = '';
-            	}            	
+                    different = false;
+                    diff = '';
+                }               
             };
             
-			watch.diff = diff;            
+            watch.diff = diff;            
             if (different) {
              watch.listner(newly, diff, watch.last);
               if (watch.once) watch.destroy();
