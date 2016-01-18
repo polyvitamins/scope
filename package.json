@@ -1,0 +1,78 @@
+{
+  "_args": [
+    [
+      "polyvitamins/scope",
+      "/Users/VladimirMorulus/WorkAreas/Sites/sag-group.ru/www/sag/vendor/synthetic"
+    ]
+  ],
+  "_from": "polyvitamins/scope",
+  "_id": "scope@1.0.0",
+  "_inCache": true,
+  "_installable": true,
+  "_location": "/scope",
+  "_phantomChildren": {
+    "es6-promise": "3.0.2",
+    "injection": "1.0.0"
+  },
+  "_requested": {
+    "hosted": {
+      "directUrl": "https://raw.githubusercontent.com/polyvitamins/scope/master/package.json",
+      "gitUrl": "git://github.com/polyvitamins/scope.git",
+      "httpsUrl": "git+https://github.com/polyvitamins/scope.git",
+      "shortcut": "github:polyvitamins/scope",
+      "ssh": "git@github.com:polyvitamins/scope.git",
+      "sshUrl": "git+ssh://git@github.com/polyvitamins/scope.git",
+      "type": "github"
+    },
+    "name": null,
+    "raw": "polyvitamins/scope",
+    "rawSpec": "polyvitamins/scope",
+    "scope": null,
+    "spec": "github:polyvitamins/scope",
+    "type": "hosted"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "git://github.com/polyvitamins/scope.git#ccfce28b4ce82fac6b782516d52b56ceafe35e28",
+  "_shasum": "c456bd676c27831cc1cb0e22bc851cbb2ba12562",
+  "_shrinkwrap": null,
+  "_spec": "polyvitamins/scope",
+  "_where": "/Users/VladimirMorulus/WorkAreas/Sites/sag-group.ru/www/sag/vendor/synthetic",
+  "author": {
+    "email": "vladimirmorulus@gmail.com",
+    "name": "Vladimir Kalmykov"
+  },
+  "bugs": {
+    "url": "https://github.com/polyvitamins/scope/issues"
+  },
+  "dependencies": {
+    "compareobjects": "github:polyvitamins/compareobjects",
+    "extend": "github:polyvitamins/extend",
+    "injection": "github:polyvitamins/injection",
+    "polypromise": "github:polyvitamins/polypromise"
+  },
+  "description": "Watcher",
+  "devDependencies": {
+    "tap": "^2.3.5"
+  },
+  "gitHead": "ccfce28b4ce82fac6b782516d52b56ceafe35e28",
+  "homepage": "https://github.com/polyvitamins/scope#readme",
+  "keywords": [
+    "scope"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "scope",
+  "optionalDependencies": {},
+  "readme": "Scope\n--\n\nThis is class of scope model. It allows you to create reverse binding model and controller. Approximately the same as angular does.\n\n## Basis methods\n\n### $watch(exprFn, callback)\nThe method is creates new watcher for arbitrary function result. Callback function will take result of exprFn function every time when digest-loop finds difference between old and new result.\n\n```js\ntest.abc = 123;\ntest.$watch(function() {\n\treturn this.abc;\n}, function(val) {\n\tconsole.log('abc is ', val); // abc is 123\n});\n\ntest.$eval(function() {\n\tthis.abc = 456;\n});\n\n// watcher fires again with val = 456;\n\n```\n\nThe method return self unwatcher as function.\n\n```js\nvar unwatcher = test.$watch(function() {\n\treturn this.abc;\n}, function(val) {\n\tconsole.log('abc is ', val); // abc is 123\n});\n\nunwacther(); // Destroy watcher\n```\n\n### $eval(callback)\nExecutes callback function and starts digest-loop for own scope and its childs.\n\n### $apply(callback)\nExecutes callback function and starts digest-loop for all scope tree.\n\n### $digest()\nStarts the digest loop forcibly\n\n## Alfa-version\nThis class is unfinished and can be not sustainable yet. Use it at your own risk.\n\n## License\nMIT\n\n## Author\nVladimir Kalmykov (Morulus) <vladimirmorulus@gmail.com>",
+  "readmeFilename": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/polyvitamins/scope.git"
+  },
+  "scripts": {
+    "test": "tap test.js"
+  },
+  "version": "1.0.0"
+}
