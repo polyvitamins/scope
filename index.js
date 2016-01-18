@@ -175,7 +175,7 @@ var Scope = function($$parent) {
     */
     $fetch: function(expressions, callback, bitoptions, reserve) {
         var singleRequest=false,shared=false;
-        if (callback instanceof Array && "string"===typeof expressions) {
+        if ("function"===typeof bitoptions && "function"==typeof callback && "string"===typeof expressions) {
             shared=expressions;
             expressions=callback;
             callback=bitoptions;
@@ -186,6 +186,12 @@ var Scope = function($$parent) {
             singleRequest = true;
             expressions = "string" === typeof expressions ? [expressions] : [[expressions, bitoptions || (POLYSCOPE_ONCE)]];
         }
+
+        /*
+        Injection to callback
+        */
+        if (this.$polyscope.injects.length>0) callback = inject(callback, this.$polyscope.injects);
+
         var self=this,
         watchable = expressions.map(function(val) {
             if ("string"===typeof val) {
@@ -433,9 +439,13 @@ var Scope = function($$parent) {
     Вносит изменения в cache и запускает digest во всем дереве
     */
     $apply: function(exprFn, data, context) {
-        var result = this.$parse(exprFn, context||undefined);
-        
-        var parent = this;
+        /*
+        Injection to exprFn
+        */
+        if ("function"===typeof exprFn && this.$polyscope.injects.length>0) exprFn = inject(exprFn, this.$polyscope.injects);
+
+        var result = this.$parse(exprFn, context||undefined),
+        parent = this;
         while(null!==this.$$parentScope && "object"===typeof this.$$parentScope && "function"===typeof this.$$parentScope.$digest) {
             parent = this.$$parentScope;
         }
@@ -444,6 +454,11 @@ var Scope = function($$parent) {
     },
     /* Выполняет выражение и запускает цикл */
     $eval: function(exprFn, data, context) {
+        /*
+        Injection to exprFn
+        */
+        if ("function"===typeof exprFn && this.$polyscope.injects.length>0) exprFn = inject(exprFn, this.$polyscope.injects);
+        
         var result = this.$parse(exprFn, context||undefined);
         this.$digest();
         return result;
