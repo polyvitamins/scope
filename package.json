@@ -13,6 +13,7 @@
   "dependencies": {
     "compareobjects": "polyvitamins/compareobjects",
     "extend": "polyvitamins/extend",
+    "injection": "github:polyvitamins/injection",
     "polypromise": "github:polyvitamins/polypromise"
   },
   "keywords": [
@@ -25,6 +26,6 @@
   },
   "homepage": "https://github.com/polyvitamins/scope#readme",
   "devDependencies": {
-    "tap": "^2.3.5"
+    "tap": "^5.1.1"
   }
 }

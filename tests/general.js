@@ -25,14 +25,16 @@ tap.test('just cross test', function(t) {
 });
 
 tap.test('watcher in plain mode', function planned(t) {
-    t.plan(2);
-
+    t.plan(1);
+    var count = 0;
     var expect = collection, count=0;
-    var watcher = tester.$watch(function() {
+    var watcher = tester.$watch([function() {
         return collection;
-    }, function(result, diff) {
+    }, POLYSCOPE_DEEP], function(result, diff) {
         count++;
-        t.ok(true);
+
+        if (count===2)
+            t.ok(true, "Value must de returned by digest");
 
     });
 

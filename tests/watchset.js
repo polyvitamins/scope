@@ -17,9 +17,9 @@ tap.test('watcher set', function planned(t) {
         "c": null
     };
     var expect = collection2, count=0;
-    var watcher = tester.$watch(function() {
+    var watcher = tester.$watch([function() {
         return collection2;
-    }, function(result, diff) {
+    }, POLYSCOPE_DEEP | POLYSCOPE_COMPARE], function(result, diff) {
         count++;
         console.log('watching', count);
         t.ok(JSON.stringify(diff)==JSON.stringify(expect), "["+count+"] Unexpected diff result. Expect "+JSON.stringify(expect)+", but "+JSON.stringify(diff)+" given;");
@@ -41,9 +41,9 @@ tap.test('test degist immersion', function planned(t) {
     setTimeout(function() {
 
         var subtester = new Scope(tester), iterations = 0,testCollection={};
-        subtester.$watch(function() {
+        subtester.$watch([function() {
             return testCollection.someInteger;
-        }, function(bulba) {
+        }, POLYSCOPE_DEEP], function(bulba) {
             iterations++;
             if (iterations===1) {
                 t.ok(bulba===undefined, "Undefined expression result must be undifined, "+("object"===typeof bulba ? JSON.stringify(bulba) : bulba)+"given");
