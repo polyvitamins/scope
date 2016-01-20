@@ -84,7 +84,7 @@ var Scope = function($$parent) {
         enumerable: false,
         writable: true,
         configurable: false,
-        value: false
+        value: []
     });
     /*
     Polyscope
@@ -185,7 +185,7 @@ var Scope = function($$parent) {
         /*
          Support capabilities specify the name of a shared object
          */
-        this.$fetch.apply(this, ("string"===typeof expr && callback instanceof Array && ("number"!==typeof bitoption && "undefined"!==typeof bitoption)) ? [expr, callback, bitoption, bitPush(reserve||0, POLYSCOPE_WATCH)] : [expr, callback, bitoption||bitPush(0, POLYSCOPE_WATCH)])
+        return this.$fetch.apply(this, ("string"===typeof expr && callback instanceof Array && ("number"!==typeof bitoption && "undefined"!==typeof bitoption)) ? [expr, callback, bitoption, bitPush(reserve||0, POLYSCOPE_WATCH)] : [expr, callback, bitoption||bitPush(0, POLYSCOPE_WATCH)])
     },
     /*
      Get some value from current object by expression.
@@ -274,7 +274,7 @@ var Scope = function($$parent) {
                 }
             });
 
-        return this.$watchSet(watchable, function() {
+        return this.$watchGroup(watchable, function() {
             var results = singleRequest ? Array.prototype.slice.apply(arguments) : Array.prototype.slice.apply(arguments).map(function(val, index) {
                 return watchable[index] instanceof Array && watchable[index][1] && watchable[index][1] & POLYSCOPE_DITAILS ? val : val[0];
             });
@@ -285,7 +285,7 @@ var Scope = function($$parent) {
     },
     /*
      Watch set
-     $watchSet([expr1, expr2, expr3], function(val1, val2, val3) { })
+     $watchGroup([expr1, expr2, expr3], function(val1, val2, val3) { })
 
      Option `fullinfo` make passible to get full info about result value. The result will be an array, where first key is new value, second value id diff.
      val1 = [value, diff];
@@ -301,10 +301,10 @@ var Scope = function($$parent) {
 
      [function() { }, (2 | 4)]
 
-     $watchSet(['start', 0], ['height', 1] , ['mystack', 2])
+     $watchGroup(['start', 0], ['height', 1] , ['mystack', 2])
 
      */
-    $watchSet: function(expressions, callback, advoption) {
+    $watchGroup: function(expressions, callback, advoption) {
         advoption = advoption || 0;
         var self = this,
             snapshot = '';
