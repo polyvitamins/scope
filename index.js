@@ -40,39 +40,89 @@ var flagsFndRegExpr = /^([?+]+)/;
 
 
 var Scope = function($$parent) {
-    this.$$digestRequired = false;
-    this.$$digestInProgress = false;
-    this.$$watchers = [];
-    this.$$digestInterationCount=0;
-    this.$polyscope={
-        customization:{
+    Object.defineProperty(this, '$$digestRequired', {
+        enumerable: false,
+        writable: true,
+        configurable: false,
+        false
+    });
+
+    Object.defineProperty(this, '$$digestInProgress', {
+        enumerable: false,
+        writable: true,
+        configurable: false,
+        false
+    });
+
+    Object.defineProperty(this, '$$watchers', {
+        enumerable: false,
+        writable: true,
+        configurable: false,
+        []
+    });
+    
+    Object.defineProperty(this, '$$digestInterationCount', {
+        enumerable: false,
+        writable: true,
+        configurable: false,
+        0
+    });
+    
+    /*
+    Link to parent scope
+    */
+    Object.defineProperty(this, '$$parentScope', {
+        enumerable: false,
+        writable: true,
+        configurable: false,
+        false
+    });
+    /*
+    List of childScopes
+    */
+    Object.defineProperty(this, '$$childScopes', {
+        enumerable: false,
+        writable: true,
+        configurable: false,
+        false
+    });
+    /*
+    Polyscope
+    */
+    Object.defineProperty(this, '$polyscope', {
+        writable: false,
+        enumerable: false, 
+        configurable: false,
+        value:  {
+            customization:{
+                /*
+                 Engine of watchExpr. It allows you to control methods and options of watch and parse process
+                 ```
+                 {
+                 match: /^scope\./,
+                 replace: /^(scope)/,
+                 scope: someobject,
+                 overrideMethod: function(expr, callback, bitconfig) { ... }
+                 }
+                 ```
+                 */
+                watchExprRouters: [],
+                /*
+                 Implict method this.$$childScopes[i].$digest();
+                 Structore of route is
+                 {
+                 match: function(child) { },
+                 overrideMethod: function(child) { ... }
+                 }
+                 */
+                digestEmploymentsRoutes: []
+            },
             /*
-             Engine of watchExpr. It allows you to control methods and options of watch and parse process
-             ```
-             {
-             match: /^scope\./,
-             replace: /^(scope)/,
-             scope: someobject,
-             overrideMethod: function(expr, callback, bitconfig) { ... }
-             }
-             ```
+             List of injects for API methods
              */
-            watchExprRouters: [],
-            /*
-             Implict method this.$$childScopes[i].$digest();
-             Structore of route is
-             {
-             match: function(child) { },
-             overrideMethod: function(child) { ... }
-             }
-             */
-            digestEmploymentsRoutes: []
-        },
-        /*
-         List of injects for API methods
-         */
-        injects: []
-    };
+            injects: []
+        }
+    });
 
     /* Set parent scope */
     if ("object"===typeof $$parent) {
@@ -209,7 +259,7 @@ var Scope = function($$parent) {
                         if (q[1].length>1) map = map | POLYSCOPE_DEEP;
                         if (q[1].length>2) map = map | POLYSCOPE_COMPARE;
                     } else {
-                        map = map | POLYSCOPE_ONCE;
+                        map = map | (bitoptions || POLYSCOPE_ONCE);
                     }
                     if (/^[?+]?([?]{1})/.test(val))
                         map = map | POLYSCOPE_DITAILS;
@@ -379,15 +429,21 @@ var Scope = function($$parent) {
          Main part of execution. Check and run override method or use native.
          */
         if ("function"===typeof overrideMethod) {
-            var watcher;
+            var watcher, importArgs, evolved=false;
             watcher = overrideMethod.call(scope, expr, function() {
-                var rargs = Array.prototype.slice.apply(arguments);
-                setTimeout(function() {
-
-                    if (!watch) watcher.destroy();
-                    callback.apply(self, rargs);
-                });
+                importArgs = Array.prototype.slice.apply(arguments);
+                if (evolved===false) evolved = true;
+                else evolved();
             }, bitconfig);
+            if (evolved===true) {
+                 if (!watch) watcher.destroy();
+                 callback.apply(self, importArgs);
+            } else {
+                evolved=function() {
+                    if (!watch) watcher.destroy();
+                    callback.apply(self, importArgs);
+                }
+            }
         } else {
             var result = this.$parse(expr, scope);
 
