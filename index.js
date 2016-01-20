@@ -44,28 +44,28 @@ var Scope = function($$parent) {
         enumerable: false,
         writable: true,
         configurable: false,
-        false
+        value: false
     });
 
     Object.defineProperty(this, '$$digestInProgress', {
         enumerable: false,
         writable: true,
         configurable: false,
-        false
+        value: false
     });
 
     Object.defineProperty(this, '$$watchers', {
         enumerable: false,
         writable: true,
         configurable: false,
-        []
+        value: []
     });
     
     Object.defineProperty(this, '$$digestInterationCount', {
         enumerable: false,
         writable: true,
         configurable: false,
-        0
+        value: 0
     });
     
     /*
@@ -75,7 +75,7 @@ var Scope = function($$parent) {
         enumerable: false,
         writable: true,
         configurable: false,
-        false
+        value: false
     });
     /*
     List of childScopes
@@ -84,7 +84,7 @@ var Scope = function($$parent) {
         enumerable: false,
         writable: true,
         configurable: false,
-        false
+        value: false
     });
     /*
     Polyscope
