@@ -1,4 +1,5 @@
 require('polyinherit');
+var bit = require('bitmask');
 var Promises = require('polypromise').Promises,
     extend = require('extend'),
     clone = function(o) {
@@ -320,7 +321,7 @@ var Scope = function($$parent) {
         new Promises(function(Promise) {
             for (var prop in expressions) {
                 if (expressions.hasOwnProperty(prop)) {
-                    Promise(function(resolve, reject) {
+                    Promise(bit(function(resolve, reject) {
                         var deep = false,
                             watch=false,
                             fullinfo=false,
@@ -339,7 +340,7 @@ var Scope = function($$parent) {
                             resolve.apply(self, (advoption & POLYSCOPE_ARRAYRESULT ? [Array.prototype.slice.apply(arguments)] : Array.prototype.slice.apply(arguments)));
                         }, bitoptions);
                         unwatchers.push(unwatcher);
-                    });
+                    }).set(POLYPROMISE_IMMEDIATE));
                 }
             }
         })
@@ -470,8 +471,8 @@ var Scope = function($$parent) {
             }
 
             // Callback now
-            callback(l,l,l);
             if (watcher.once) watcher.destroy();
+            callback(l,l,l);
         }
 
         return watcher;
