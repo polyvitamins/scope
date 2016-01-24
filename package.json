@@ -4,18 +4,19 @@
   "description": "Watcher",
   "main": "index.js",
   "scripts": {
-    "test": "tap tests/general.js --no-coverage && tap tests/deep.js --no-coverage"
+    "test": "tap tests/general.js --no-coverage && tap tests/deep.js --no-coverage && tap tests/expr.js --no-coverage && tap tests/inject.js --no-coverage && tap tests/shared.js --no-coverage && tap tests/watchset.js --no-coverage"
   },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/polyvitamins/scope.git"
   },
   "dependencies": {
+    "bitmask": "github:polyvitamins/bitmask",
     "compareobjects": "polyvitamins/compareobjects",
     "extend": "polyvitamins/extend",
     "injection": "github:polyvitamins/injection",
-    "polypromise": "github:polyvitamins/polypromise",
-    "polyinherit": "github:polyvitamins/polyinherit"
+    "polyinherit": "github:polyvitamins/polyinherit",
+    "polypromise": "github:polyvitamins/polypromise"
   },
   "keywords": [
     "scope"
