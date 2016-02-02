@@ -30,13 +30,14 @@ tap.test('new scope by class', function planned(t) {
 
 
 tap.test('new scope by charge', function planned(t) {
-    t.plan(4);
+    t.plan(5);
     
     var sub = tester.$newScope(someObject);
     t.ok(sub.b==2, 'sub.b must be 2');
     t.ok("function"===typeof sub.c, 'sub.c must be prototype function again');
     t.ok("function"===typeof sub.$digest, 'sub.$digest must be function again');
     t.ok("object"===typeof sub.$$watchers, 'sub.$$watchers must be an array again');
+    t.ok("object"===typeof sub.$$parentScope, 'sub.$$parentScope must be an object');
 });
 
 tap.test('some class has no scope sings after creating', function planned(t) {

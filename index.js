@@ -145,7 +145,7 @@ var Scope = function($$parent) {
         if ("function"===typeof prototype) {
             childScope = new (inherit(function() { }, [prototype, Scope]))(this);
         } else if ("object"===typeof prototype) {
-            childScope = charge(prototype, Scope);
+            childScope = charge(prototype, Scope, [this]);
         } else {
             childScope = new Scope(this);   
         }
