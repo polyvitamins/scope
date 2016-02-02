@@ -1,5 +1,7 @@
 require('polyinherit');
 var bit = require('bitmask');
+var charge = require('charge');
+var inherit = require('inherit');
 var Promises = require('polypromise').Promises,
     extend = require('extend'),
     clone = function(o) {
@@ -136,10 +138,18 @@ var Scope = function($$parent) {
     if ("undefined"===typeof this.$$childScopes) this.$$childScopes = [];
 }.proto({
     /*
-     Creates new scope
-     */
-    $newScope: function() {
-        this.$$childScopes.push(new Scope(this));
+    Creates new scope
+    */
+    $newScope: function(prototype) {
+        var childScope;
+        if ("function"===typeof prototype) {
+            childScope = new (inherit(function() { }, [prototype, Scope]))(this);
+        } else if ("object"===typeof prototype) {
+            childScope = charge(prototype, Scope);
+        } else {
+            childScope = new Scope(this);   
+        }
+        this.$$childScopes.push(childScope);
         return this.$$childScopes[this.$$childScopes.length-1];
     },
     /*
