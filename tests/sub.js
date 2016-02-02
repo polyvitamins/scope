@@ -17,13 +17,14 @@ someClass.prototype = {
 var someObject = new someClass();
 
 tap.test('new scope by class', function planned(t) {
-    t.plan(5);
+    t.plan(6);
     
     var sub = tester.$newScope(someClass, [777]);
     t.ok(sub.b==2, 'sub.b must be 2');
     t.ok("function"===typeof sub.c, 'sub.c must be prototype function');
     t.ok("function"===typeof sub.$digest, 'sub.$digest must be function');
     t.ok("object"===typeof sub.$$watchers, 'sub.$$watchers must be an array');
+    t.ok("object"===typeof sub.$polyscope, 'sub.$$polyscope must be an object');
     t.ok(777 === sub.d, 'sub.d must be 777');
 });
 

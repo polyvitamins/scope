@@ -144,7 +144,7 @@ var Scope = function($$parent) {
     $newScope: function(prototype, args) {
         var childScope;
         if ("function"===typeof prototype) {
-            var superClass = (inherit(function() { }, [prototype, Scope]));
+            var superClass = (inherit(function() { }, [Scope, prototype]));
 
             superClass.__disableContructor__ = true;
         
@@ -153,7 +153,7 @@ var Scope = function($$parent) {
             
             childScope = module;
         } else if ("object"===typeof prototype) {
-            childScope = charge(prototype, Scope, [this]);
+            childScope = charge(Scope, prototype, [this]);
         } else {
             childScope = new Scope(this);   
         }
