@@ -138,12 +138,20 @@ var Scope = function($$parent) {
     if ("undefined"===typeof this.$$childScopes) this.$$childScopes = [];
 }.proto({
     /*
-    Creates new scope
+    Creates new scope.
+    If prototype is function, use second argument to specify constructor arguments in array
     */
-    $newScope: function(prototype) {
+    $newScope: function(prototype, args) {
         var childScope;
         if ("function"===typeof prototype) {
-            childScope = new (inherit(function() { }, [prototype, Scope]))(this);
+            var superClass = (inherit(function() { }, [prototype, Scope]));
+
+            superClass.__disableContructor__ = true;
+        
+            var module = new superClass();
+            superClass.apply(module, ([this]).concat(args||[]));
+            
+            childScope = module;
         } else if ("object"===typeof prototype) {
             childScope = charge(prototype, Scope, [this]);
         } else {

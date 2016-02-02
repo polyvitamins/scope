@@ -5,8 +5,9 @@ var tester;
 
 var tester = new Scope();
 
-var someClass = function() {
+var someClass = function(parent, secretCode) {
 	this.b = 2;
+    this.d = secretCode;
 }
 someClass.prototype = {
 	constructor: someClass,
@@ -18,13 +19,12 @@ var someObject = new someClass();
 tap.test('new scope by class', function planned(t) {
     t.plan(5);
     
-    var sub = tester.$newScope(someClass);
+    var sub = tester.$newScope(someClass, [777]);
     t.ok(sub.b==2, 'sub.b must be 2');
     t.ok("function"===typeof sub.c, 'sub.c must be prototype function');
     t.ok("function"===typeof sub.$digest, 'sub.$digest must be function');
     t.ok("object"===typeof sub.$$watchers, 'sub.$$watchers must be an array');
-
-    t.ok("object"===typeof sub.$$watchers, 'sub.$$watchers must be an array');
+    t.ok(777 === sub.d, 'sub.d must be 777');
 });
 
 
