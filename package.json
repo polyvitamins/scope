@@ -12,8 +12,10 @@
   },
   "dependencies": {
     "bitmask": "github:polyvitamins/bitmask",
+    "charge": "github:polyvitamins/charge",
     "compareobjects": "polyvitamins/compareobjects",
     "extend": "polyvitamins/extend",
+    "inherit": "github:polyvitamins/inherit",
     "injection": "github:polyvitamins/injection",
     "polyinherit": "github:polyvitamins/polyinherit",
     "polypromise": "github:polyvitamins/polypromise"
