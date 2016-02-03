@@ -445,6 +445,12 @@ var Scope = function($$parent) {
                 overrideMethod = customizer.overrideMethod;
         }
         /*
+        Compile expr
+        */
+        if ("string"===typeof expr) {
+            expr = this.$compileExpr(expr);
+        }
+        /*
          Main part of execution. Check and run override method or use native.
          */
         if ("function"===typeof overrideMethod) {
@@ -494,6 +500,13 @@ var Scope = function($$parent) {
         }
 
         return watcher;
+    },
+    $compileExpr: function(stringExpr) {
+        if ("string"===typeof stringExpr) {
+            return new Function("", "with(this) { return "+stringExpr+"; }");
+        } else {
+            return stringExpr;
+        }
     },
     $parse: function(expr, scope) {
         var result, customizer;

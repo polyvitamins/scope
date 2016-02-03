@@ -41,7 +41,12 @@ tap.test('customize watcher', function planned(t) {
             var result;
             with (scope) {
                 try {
-                    eval('result=' + expr + ';');
+                    if ("function"===typeof expr) {
+                        result = expr.apply(scope);
+                    } else {
+                        eval('result=' + expr + ';');
+                    }
+                    
                 } catch(e) {
                     console.log('result=' + expr + ';');
                     throw e;
