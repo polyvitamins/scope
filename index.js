@@ -509,8 +509,9 @@ var Scope = function($$parent) {
                 try {
                     eval('result = '+expr+';');
                 } catch(e) {
-                    throw 'Error in expression: '+'result = '+expr+';';
-                    result = new Error(e);
+                    //throw 'Error in expression: '+'result = '+expr+';';
+                    console.error('Error in expression: '+'result = '+expr+';', e);
+                    result = undefined;
                 }
             }
         } else {
