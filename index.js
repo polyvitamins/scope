@@ -447,7 +447,7 @@ var Scope = function($$parent) {
         /*
         Compile expr
         */
-        if ("string"===typeof expr) {
+        else if ("string"===typeof expr) {
             expr = this.$compileExpr(expr);
         }
         /*
