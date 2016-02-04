@@ -515,20 +515,20 @@ var Scope = function($$parent) {
             if (customizer.replace instanceof RegExp) expr.replace(customizer.replace, '');
         }
 
-        if ("function"===typeof expr) {
-            result = expr.apply(scope||this);
-        } else if ("string"===typeof expr) {
-            with(scope||this) {
-                try {
-                    eval('result = '+expr+';');
-                } catch(e) {
-                    //throw 'Error in expression: '+'result = '+expr+';';
-                    console.error('Error in expression: '+'result = '+expr+';', e);
-                    result = undefined;
+        try {
+            if ("function"===typeof expr) {
+                result = expr.apply(scope||this);
+            } else if ("string"===typeof expr) {
+                with(scope||this) {
+                        eval('result = '+expr+';');
                 }
+            } else {
+                result = expr;
             }
-        } else {
-            result = expr;
+        } catch(e) {
+            //throw 'Error in expression: '+'result = '+expr+';';
+            console.error('Error in expression: '+'result = '+expr+';', e);
+            result = undefined;
         }
         return result;
     },
