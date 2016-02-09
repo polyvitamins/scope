@@ -458,7 +458,7 @@ var Scope = function($$parent) {
             watcher = overrideMethod.call(scope, expr, function() {
                 importArgs = Array.prototype.slice.apply(arguments);
                 if (evolved===false) evolved = true;
-                else evolved();
+                else if ("function"===typeof evolved) evolved();
             }, bitconfig);
             if (evolved===true) {
                  if (!watch) watcher.destroy();
