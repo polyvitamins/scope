@@ -526,8 +526,8 @@ var Scope = function($$parent) {
                 result = expr;
             }
         } catch(e) {
-            //throw 'Error in expression: '+'result = '+expr+';';
-            console.error('Error in expression: '+'result = '+expr+';', e);
+            // Display error only if expr is function
+            if ("function"===typeof expr) console.error('Error in expression: '+'result = '+expr+';', e);
             result = undefined;
         }
         return result;
