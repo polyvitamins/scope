@@ -586,65 +586,82 @@ var Scope = function($$parent) {
             }
         }
 
-        if (this.$$digestInProgress) { this.$$digestRequired = true; return }
-        this.$$digestInProgress = true;
+        if (this.$$digestInProgress>0) { this.$$digestRequired = true; return }
+        this.$$digestInProgress++;
 
-        this.$$watchers.forEach(function(watch) {
-            if (watch===null) return;
-            var newly = self.$parse(watch.expr, watch.scope),different=false;
-            if ("object"===typeof newly && "object"===typeof watch.last) {
+        var stack = 0;
+        do {
+            try {
+                var responseList = [];
+                this.$$watchers.forEach(function(watch) {
+                    if (watch===null) return;
+                    var newly = self.$parse(watch.expr, watch.scope),different=false;
+                    if ("object"===typeof newly && "object"===typeof watch.last) {
 
-                if (watch.deep) {
-                    if (watch.compare) {
-                        var diff = compareObjects(newly, watch.last);
-                        if (diff.$$hashKey) delete diff.$$hashKey; // Delete angular stuff
-                        different=(JSON.stringify(diff) !== '{}');
+                        if (watch.deep) {
+                            if (watch.compare) {
+                                var diff = compareObjects(newly, watch.last);
+                                if (diff.$$hashKey) delete diff.$$hashKey; // Delete angular stuff
+                                different=(JSON.stringify(diff) !== '{}');
+                            } else {
+                                different=(JSON.stringify(newly)!==JSON.stringify(watch.last));
+
+                                if (different) diff = newly;
+                                else diff = {};
+                            }
+                        } else {
+                            different= (newly!==watch.last);
+                            diff = newly;
+                        }
+
+                    } else if (typeof newly !== typeof watch.last) {
+
+                        different = true;
+                        diff = newly;
                     } else {
-                        different=(JSON.stringify(newly)!==JSON.stringify(watch.last));
 
-                        if (different) diff = newly;
-                        else diff = {};
+                        if (newly!==watch.last) {
+
+                            different = true;
+                            diff = newly;
+                        } else {
+
+                            different = false;
+                            diff = '';
+                        }
+                    };
+
+                    watch.diff = diff;
+                    if (different) {
+                        responseList.push([watch.listner, [newly, diff, watch.last]]);
+                        
+                        if (watch.once) watch.destroy();
+                        watch.last = "object"===typeof newly ? (watch.deep ? clone(newly) : newly) : newly;
                     }
-                } else {
-                    different= (newly!==watch.last);
-                    diff = newly;
-                }
 
-            } else if (typeof newly !== typeof watch.last) {
-
-                different = true;
-                diff = newly;
-            } else {
-
-                if (newly!==watch.last) {
-
-                    different = true;
-                    diff = newly;
-                } else {
-
-                    different = false;
-                    diff = '';
-                }
-            };
-
-            watch.diff = diff;
-            if (different) {
-                watch.listner(newly, diff, watch.last);
-                if (watch.once) watch.destroy();
-                watch.last = "object"===typeof newly ? (watch.deep ? clone(newly) : newly) : newly;
+                });
+            } catch(e) {
+                this.$$digestInProgress--;
+                throw e;
+                return false;
             }
 
-        });
-        if (this.$$digestRequired) {
-            this.$$digestInterationCount++;
-            if (this.$digestInterationCount>5) {
-                throw 'Digest max interation count';
+            try {
+                for (var i = 0;i<responseList.length;++i) {
+                    responseList[i][0].apply(this, responseList[i][1]);
+                }
+            } catch(e) {
+                
+                throw e;
+                return;
             }
-            this.$digest();
-        } else {
-            this.$$digestInterationCount=0;
-            this.$$digestInProgress = false;
+            stack++;
+        } while((this.$$digestRequired&&responseList.length>0)&&stack<10); // Repeat until there is no diffs
+        if (stack==5) {
+            throw 'Digest max stack iteration count';
         }
+
+        this.$$digestInProgress--;
     },
     $approve: function() {
         sx.utils.eachArray(this.$$watchers, function(watch) {
