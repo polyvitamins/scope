@@ -527,8 +527,14 @@ var Scope = function($$parent) {
             }
         } catch(e) {
             // Display error only if expr is function
-            if ("function"===typeof expr) throw e;
-            result = undefined;
+            if ("function"===typeof expr) {
+                /*
+                If there is an error we must throw it async to prevent crashing digest loop
+                */
+                setTimeout(function() {
+                    throw e;
+                });
+            }
         }
         return result;
     },
