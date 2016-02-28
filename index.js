@@ -460,14 +460,20 @@ var Scope = function($$parent) {
                 if (evolved===false) evolved = true;
                 else if ("function"===typeof evolved) evolved();
             }, bitconfig);
+            /*
+            Evolved == true means that wacther fired immediatly. 
+            */
             if (evolved===true) {
                  if (!watch) watcher.destroy();
                  callback.apply(self, importArgs);
-            } else {
-                evolved=function() {
+            };
+            /*
+            Set evolved as function
+            */
+            evolved=function() {
                     if (!watch) watcher.destroy();
                     callback.apply(self, importArgs);
-                }
+                
             }
         } else {
             var result = this.$parse(expr, scope);
