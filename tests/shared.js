@@ -39,20 +39,8 @@ tap.test('customize watcher', function planned(t) {
         replace: /^(scope\.)/,
         overrideMethod: function(expr, callback, flags) {
             var result;
-            with (scope) {
-                try {
-                    if ("function"===typeof expr) {
-                        result = expr.apply(scope);
-                    } else {
-                        eval('result=' + expr + ';');
-                    }
-                    
-                } catch(e) {
-                    console.log('result=' + expr + ';');
-                    throw e;
-                }
-            }
-            callback(result);
+            
+            callback(tester.$parse(expr, scope));
 
             return {
                 destroy: function() {

@@ -1,4 +1,4 @@
-require('polyinherit');
+"use strict";
 var bit = require('bitmask');
 var charge = require('charge');
 var inherit = require('inherit');
@@ -8,7 +8,7 @@ var Promises = require('polypromise').Promises,
         return extend(true, {}, o);
     },
     compareObjects = require('compareobjects'),
-    inject = require('injection').inject,
+    inject = require('injection/es5.js').inject,
     dataSnap = function(data) {
         var snap;
         if ("object"===typeof data && null!==data) {
@@ -31,18 +31,123 @@ var Promises = require('polypromise').Promises,
     }
 
 // Set global constants
-POLYSCOPE_DEFAULT = 1 << 0;
-POLYSCOPE_WATCH = 1 << 1;
-POLYSCOPE_ONCE = 1 << 2;
-POLYSCOPE_DEEP = 1 << 3;
-POLYSCOPE_DITAILS = 1 << 4;
-POLYSCOPE_COMPARE = 1 << 5;
-POLYSCOPE_ARRAYRESULT = 1 << 10;
+const POLYSCOPE_DEFAULT = 1 << 0;
+const POLYSCOPE_WATCH = 1 << 1;
+const POLYSCOPE_ONCE = 1 << 2;
+const POLYSCOPE_DEEP = 1 << 3;
+const POLYSCOPE_DITAILS = 1 << 4;
+const POLYSCOPE_COMPARE = 1 << 5;
+const POLYSCOPE_ARRAYRESULT = 1 << 10;
+
+var jsoperators = [
+	"delete",
+	"function",
+	"in",
+	"instanceof",
+	"new",
+	"this",
+	"typeof",
+	"void"
+];
+
+function $compileExpr(expr, scopeName, globalize, extraNames, extraScopeName) {
+	let mod = [0],
+  variables = [],
+  ignoreVariablesNames = ([]).concat(globalize||[], jsoperators),
+  closeVariable = function() {
+  	if (mod[0]===2&&!~ignoreVariablesNames.indexOf(expr.substring(mod[1], mod[1]+mod[2]))) {
+      	// end of variable
+        variables.push([mod[1], mod[2]]);
+      }
+  };
+	for (let i = 0;i<expr.length;++i) {
+
+  	if ('"'===expr.charAt(i)||"'"===expr.charAt(i)) {
+    	if (mod[0]===1&&mod[1]===expr.charAt(i)) mod[0] = 0;
+    	else {
+      	closeVariable();
+      	mod = [1,expr.charAt(i)];
+      }
+    }
+    else if ('.'===expr.charAt(i)) {
+    	closeVariable();
+      mod = [3];
+    }
+  	else if (mod[0]!==1 && ((expr.charAt(i)>='A'&&expr.charAt(i)<='Z'||expr.charAt(i)>='a'&&expr.charAt(i)<='z')
+    ||expr.charAt(i)==='_'||expr.charAt(i)==='$'
+    ||(mod[0]==2 && expr.charAt(i)>='0' && expr.charAt(i)<='9'))) {
+    	if (mod[0]==3) {
+      	continue;
+      }
+      else if (mod[0]===0) {
+      	// add new variable
+        mod = [2,i,1];
+      } else if (mod[0]===2) {
+      	// append to variable
+        mod[2]++;
+      }
+    } else {
+    	if (mod[0]===1) continue;
+	    	if (mod[2]) closeVariable();
+	      mod=[0];
+    }
+  }
+
+  closeVariable();
+
+  // Patch all variables
+  let shift = 0;
+  for (let i = 0;i<variables.length;++i) {
+  	if (extraNames&&!!~extraNames.indexOf(expr.substr(variables[i][0]+(shift), variables[i][1]))) {
+  		expr = expr.substring(0, variables[i][0]+(shift)) +
+    extraScopeName +"."+expr.substring(variables[i][0]+(shift));
+    	shift+=extraScopeName.length+1;
+  	} else {
+  		expr = expr.substring(0, variables[i][0]+(shift)) +
+    scopeName +"."+expr.substring(variables[i][0]+(shift));
+    	shift+=scopeName.length+1;
+  	}
+  }
+
+  return new Function(scopeName+","+extraScopeName, 'return '+expr); //
+}
+
+
+/**
+ * Compile an expression in context of this
+ *
+ * @return {function}  An function requires only data
+ */
+function $thisCompileExpr(exp, context) {
+  var compiledExpression = $compileExpr(exp+';', '$this', [], [], '$$datas');
+  return function(data) {
+    return compiledExpression(this, data||{});
+  }.bind(context);
+}
+
+function $eval($eval, exp, $$datas) {
+	this.$compileExpr(exp+';', '$this', [], Object.keys($$datas), '$$datas')(this, $$datas);
+}
+
 
 var flagsFndRegExpr = /^([?+]+)/;
 
+function proto(fn, prototype) {
+  var FnWithPrototype = function FnWithPrototype() {
+    fn.apply(this, Array.from(arguments));
+  }
+  FnWithPrototype.prototype = Object.create(fn.prototype, {
+    constructor: {
+      writable: false,
+      configurable: false,
+      value: fn
+    }
+  });
+  Object.assign(FnWithPrototype.prototype, prototype);
+  return FnWithPrototype;
+}
 
-var Scope = function($$parent) {
+var Scope = proto(function($$parent) {
     Object.defineProperty(this, '$$digestRequired', {
         enumerable: false,
         writable: true,
@@ -63,14 +168,14 @@ var Scope = function($$parent) {
         configurable: false,
         value: []
     });
-    
+
     Object.defineProperty(this, '$$digestInterationCount', {
         enumerable: false,
         writable: true,
         configurable: false,
         value: 0
     });
-    
+
     /*
     Link to parent scope
     */
@@ -94,7 +199,7 @@ var Scope = function($$parent) {
     */
     Object.defineProperty(this, '$polyscope', {
         writable: false,
-        enumerable: false, 
+        enumerable: false,
         configurable: false,
         value:  {
             customization:{
@@ -136,7 +241,7 @@ var Scope = function($$parent) {
      Make self childs
      */
     if ("undefined"===typeof this.$$childScopes) this.$$childScopes = [];
-}.proto({
+}, {
     /*
     Creates new scope.
     If prototype is function, use second argument to specify constructor arguments in array
@@ -147,15 +252,15 @@ var Scope = function($$parent) {
             var superClass = (inherit(function() { }, [Scope, prototype]));
 
             superClass.__disableContructor__ = true;
-        
+
             var module = new superClass();
             superClass.apply(module, ([this]).concat(args||[]));
-            
+
             childScope = module;
         } else if ("object"===typeof prototype) {
             childScope = charge(Scope, prototype, [this]);
         } else {
-            childScope = new Scope(this);   
+            childScope = new Scope(this);
         }
         this.$$childScopes.push(childScope);
         return this.$$childScopes[this.$$childScopes.length-1];
@@ -173,7 +278,7 @@ var Scope = function($$parent) {
      */
     $$getCustomizationByMatch: function(customizer, expr) {
         if (this.$polyscope.customization[customizer].length>0) {
-            for (i=0;i<this.$polyscope.customization[customizer].length;++i) {
+            for (let i=0;i<this.$polyscope.customization[customizer].length;++i) {
                 if (this.$polyscope.customization[customizer][i].match && "undefined"!==typeof expr && null!==expr
                     && (this.$polyscope.customization[customizer][i].match===true || (this.$polyscope.customization[customizer][i].match instanceof RegExp && this.$polyscope.customization[customizer][i].match.test(expr)) || ("function"===typeof this.$polyscope.customization[customizer][i].match && this.$polyscope.customization[customizer][i].match(expr)))) {
                     return this.$polyscope.customization[customizer][i];
@@ -410,9 +515,11 @@ var Scope = function($$parent) {
      Function itself must return an object with method destroy that destroy a watcher^
 
      */
-    $watchExpr: function(expr, callback, bitconfig) {
+    $watchExpr: function(originalExprText, callback, bitconfig) {
         var deep,
+            expr,
             watch,
+            compare,
             fullinfo,
             self=this,
             i=0,
@@ -435,27 +542,29 @@ var Scope = function($$parent) {
          this.$$polyscope.customized.watchExprRouters[] must have property `match` with regexpr determines its participation.
          Property `replace` contains regular expression to replace some text in expression. Property `scope` set up default scopr for this expression
          */
-        var customizer = "string"===typeof expr ? this.$$getCustomizationByMatch('watchExprRouters', expr) : false;
+        var customizer = "string"===typeof originalExprText ? this.$$getCustomizationByMatch('watchExprRouters', originalExprText) : false;
         if (customizer){
             if (customizer.scope)
                 scope = customizer.match[i].scope;
             if (customizer.replace instanceof RegExp)
-                expr = expr.replace(customizer.replace, '');
+                originalExprText = originalExprText.replace(customizer.replace, '');
             if (customizer.overrideMethod)
                 overrideMethod = customizer.overrideMethod;
         }
         /*
         Compile expr
         */
-        if ("string"===typeof expr) {
-            expr = this.$compileExpr(expr);
+        if ("string"===typeof originalExprText) {
+            expr = this.$compileExpr(originalExprText);
+        } else {
+            expr = originalExprText;
         }
         /*
          Main part of execution. Check and run override method or use native.
          */
         if ("function"===typeof overrideMethod) {
             var watcher, importArgs, evolved=false;
-            watcher = overrideMethod.call(scope, expr, function() {
+            watcher = overrideMethod.call(scope, originalExprText, function() {
                 importArgs = Array.prototype.slice.apply(arguments);
                 if (evolved===false) evolved = true;
                 else evolved();
@@ -501,9 +610,9 @@ var Scope = function($$parent) {
 
         return watcher;
     },
-    $compileExpr: function(stringExpr) {
+    $compileExpr: function(stringExpr, context) {
         if ("string"===typeof stringExpr) {
-            return new Function("", "with(this) { return "+stringExpr+"; }");
+            return $thisCompileExpr(stringExpr, context||this);
         } else {
             return stringExpr;
         }
@@ -518,15 +627,7 @@ var Scope = function($$parent) {
         if ("function"===typeof expr) {
             result = expr.apply(scope||this);
         } else if ("string"===typeof expr) {
-            with(scope||this) {
-                try {
-                    eval('result = '+expr+';');
-                } catch(e) {
-                    //throw 'Error in expression: '+'result = '+expr+';';
-                    console.error('Error in expression: '+'result = '+expr+';', e);
-                    result = undefined;
-                }
-            }
+            return this.$compileExpr(expr, scope||this)();
         } else {
             result = expr;
         }
@@ -658,5 +759,13 @@ var Scope = function($$parent) {
         });
     }
 });
+
+Scope.POLYSCOPE_DEFAULT = POLYSCOPE_DEFAULT;
+Scope.POLYSCOPE_WATCH = POLYSCOPE_WATCH;
+Scope.POLYSCOPE_ONCE = POLYSCOPE_ONCE;
+Scope.POLYSCOPE_DEEP = POLYSCOPE_DEEP;
+Scope.POLYSCOPE_DITAILS = POLYSCOPE_DITAILS;
+Scope.POLYSCOPE_COMPARE = POLYSCOPE_COMPARE;
+Scope.POLYSCOPE_ARRAYRESULT = POLYSCOPE_ARRAYRESULT;
 
 module.exports = Scope;

@@ -24,7 +24,7 @@ tap.test('watcher in deep mode', function planned(t) {
         console.log('watching', count);
         t.ok(JSON.stringify(diff)==JSON.stringify(expect), "["+count+"] Unexpected diff result. Expect "+JSON.stringify(expect)+", but "+JSON.stringify(diff)+" given;");
 
-    }, POLYSCOPE_DEEP | POLYSCOPE_DITAILS);
+    }, Scope.POLYSCOPE_DEEP | Scope.POLYSCOPE_DITAILS);
 
     setTimeout(function() {
         // Change c to true
@@ -59,4 +59,3 @@ tap.test('test degist immersion', function planned(t) {
 
     }, 50);
 });
-

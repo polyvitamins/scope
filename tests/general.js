@@ -30,7 +30,7 @@ tap.test('watcher in plain mode', function planned(t) {
     var expect = collection, count=0;
     var watcher = tester.$watch([function() {
         return collection;
-    }, POLYSCOPE_DEEP], function(result, diff) {
+    }, Scope.POLYSCOPE_DEEP], function(result, diff) {
         count++;
 
         if (count===2)

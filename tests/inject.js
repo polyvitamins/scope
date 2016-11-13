@@ -29,7 +29,7 @@ tap.test('try to inject', function planned(t) {
 
         t.ok($omega()===3 && $alfa===1, "$omega() must be 3, $alfa must be 1");
 
-    }, POLYSCOPE_DEEP | POLYSCOPE_DITAILS);
+    }, Scope.POLYSCOPE_DEEP | Scope.POLYSCOPE_DITAILS);
 
-   
+
 });
