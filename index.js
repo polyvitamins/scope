@@ -448,42 +448,42 @@ var Scope = proto(function($$parent) {
                     unwatchers[i].destroy();
                 }
             };
-        new Promises(function(Promise) {
-            for (var prop in expressions) {
-                if (expressions.hasOwnProperty(prop)) {
-                    Promise(bit(function(resolve, reject) {
-                        var deep = false,
-                            watch=false,
-                            fullinfo=false,
-                            unwatcher;
-                        var bitoptions;
-                        if (expressions[prop] instanceof Array) {
-                            bitoptions = expressions[prop][1];
+        let promises = [];
+        for (var prop in expressions) {
+            if (expressions.hasOwnProperty(prop)) {
+                promises.push(new Promise(function(resolve, reject) {
+                    var deep = false,
+                        watch=false,
+                        fullinfo=false,
+                        unwatcher;
+                    var bitoptions;
+                    if (expressions[prop] instanceof Array) {
+                        bitoptions = expressions[prop][1];
 
-                        } else {
-                            bitoptions = POLYSCOPE_WATCH;
-                            fullinfo = false;
-                        }
+                    } else {
+                        bitoptions = POLYSCOPE_WATCH;
+                        fullinfo = false;
+                    }
 
-                        unwatcher = self.$watchExpr(expressions[prop] instanceof Array ? expressions[prop][0] : expressions[prop], function(val) {
+                    unwatcher = self.$watchExpr(expressions[prop] instanceof Array ? expressions[prop][0] : expressions[prop], function(val) {
 
-                            resolve.apply(self, (advoption & POLYSCOPE_ARRAYRESULT ? [Array.prototype.slice.apply(arguments)] : Array.prototype.slice.apply(arguments)));
-                        }, bitoptions);
-                        unwatchers.push(unwatcher);
-                    }).set(POLYPROMISE_IMMEDIATE));
-                }
+                        resolve.apply(self, (advoption & POLYSCOPE_ARRAYRESULT ? [Array.prototype.slice.apply(arguments)] : Array.prototype.slice.apply(arguments)));
+                    }, bitoptions);
+                    unwatchers.push(unwatcher);
+                }));
             }
-        })
-            .then(function() {
-                var snap = dataSnap(Array.prototype.slice.apply(arguments));
-                if (snap===snapshot) return; // Data not changed
-                callback.apply(self, arguments);
-            }, true)
-            .catch(function() {
-                var snap = dataSnap(Array.prototype.slice.apply(arguments));
-                if (snap===snapshot) return; // Data not changed
-                callback.apply(self, arguments);
-            }, true);
+        }
+        Promise.all(promises)
+        .then(function(args) {
+            var snap = dataSnap(Array.prototype.slice.apply(args));
+            if (snap===snapshot) return; // Data not changed
+            callback.apply(self, args);
+        }, true)
+        .catch(function() {
+            var snap = dataSnap(Array.prototype.slice.apply(args));
+            if (snap===snapshot) return; // Data not changed
+            callback.apply(self, args);
+        }, true);
 
         return unwacther;
     },
