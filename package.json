@@ -17,7 +17,6 @@
     "extend": "polyvitamins/extend",
     "inherit": "github:polyvitamins/inherit",
     "injection": "github:polyvitamins/injection",
-    "polyinherit": "github:polyvitamins/polyinherit",
     "polypromise": "github:polyvitamins/polypromise"
   },
   "keywords": [
