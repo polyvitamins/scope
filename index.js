@@ -242,6 +242,13 @@ var Scope = proto(function($$parent) {
      */
     if ("undefined"===typeof this.$$childScopes) this.$$childScopes = [];
 }, {
+    /**
+     * Assign data to scope and run digest circle
+     */
+    $assign: function(data) {
+      Object.assign(this, data);
+      this.$digest();
+    },
     /*
     Creates new scope.
     If prototype is function, use second argument to specify constructor arguments in array
